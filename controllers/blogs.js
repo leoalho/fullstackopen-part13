@@ -10,18 +10,16 @@ blogRouter.get('/', async (req, res) => {
     res.json(blogs)
 })
 
-blogRouter.post('/', async (req, res) => {
+blogRouter.post('/', async (req, res, next) => {
     try{
-        console.log(req.body)
         const blog = await Blog.create(req.body)
         res.json(blog)
     } catch (error) {
-        console.log(error)
-        res.status(400).end()
+        next(error)
     }
 })
 
-blogRouter.get('/:id', blogFinder, (req, res) => {
+blogRouter.get('/:id', blogFinder, (req, res, next) => {
     if (req.blog) {
         res.json(req.blog)
     }else{
