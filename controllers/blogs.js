@@ -2,6 +2,7 @@ const blogRouter = require('express').Router()
 const { Blog, User } = require('../models')
 const jwt = require('jsonwebtoken')
 const { SECRET } = require('../util/config')
+const { Op } = require('sequelize')
 
 const tokenExtractor = (req, res, next) => {
     const authorization = req.get('authorization')
@@ -23,7 +24,19 @@ const blogFinder = async (req, res, next) => {
     next()}
 
 blogRouter.get('/', async (req, res) => {
-    const blogs = await Blog.findAll()
+    var where = {}
+    if (req.query.search){
+        where.title = {[Op.iLike]: `%${req.query.search}%`}
+    }
+    
+    const blogs = await Blog.findAll({
+        order: [['likes', 'DESC']],
+        where,
+        attributes: { exclude: ['userId'] },
+        include: {
+            model: User,
+            attributes: ['name']
+        }})
     res.json(blogs)
 })
 
