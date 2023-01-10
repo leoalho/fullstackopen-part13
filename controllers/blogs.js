@@ -1,5 +1,7 @@
 const blogRouter = require('express').Router()
 const { Blog, User } = require('../models')
+const jwt = require('jsonwebtoken')
+const { SECRET } = require('../util/config')
 
 const tokenExtractor = (req, res, next) => {
     const authorization = req.get('authorization')
@@ -27,7 +29,7 @@ blogRouter.get('/', async (req, res) => {
 
 blogRouter.post('/', tokenExtractor, async (req, res, next) => {
     try{
-        const user = await User.findByPk(req.decodedToken.id)
+        const user = await User.findByPk(req.decodedToken)
         const blog = await Blog.create({...req.body, userId: user.id})
         res.json(blog)
     } catch (error) {
@@ -53,11 +55,19 @@ blogRouter.put('/:id', blogFinder, async (req, res) => {
     }
 })
 
-blogRouter.delete('/:id', blogFinder, async (req, res) => {
-    if (req.blog) {
-        await req.blog.destroy()
+blogRouter.delete('/:id', [blogFinder, tokenExtractor], async (req, res, next) => {
+    try{
+        const user = await User.findByPk(parseInt(req.decodedToken))
+        if (user.id === req.blog.userId){
+            await req.blog.destroy()
+            res.status(200).end()
+        }else {
+            res.status(401).end()
+        }
+    } catch(error) {
+        console.log(error)
+        next(error)
     }
-    res.status(204).end()
 })
 
 module.exports = blogRouter
